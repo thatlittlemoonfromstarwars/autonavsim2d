@@ -192,6 +192,13 @@ class AutoNavSim2D:
         text = self.RESET_FONT.render("Reset", 1, WHITE)
         ACTIVE_WINDOW.blit(text, (self.WIN_WIDTH+125, 525))
 
+    def draw_save_map_button(self, ACTIVE_WINDOW, button, color):
+        pygame.draw.rect(ACTIVE_WINDOW, color, button, border_radius=5)
+
+        # add text to button
+        text = self.RESET_FONT.render("Save map", 1, WHITE)
+        ACTIVE_WINDOW.blit(text, (self.WIN_WIDTH+104, 585))
+
 
     def draw_path(self, generated_path, grid, start, end, color, draw_new_path):
         # draw new map
@@ -338,8 +345,8 @@ class AutoNavSim2D:
         self.WIN.blit(diff_drive_text, (self.WIN_WIDTH_FULL/2 - diff_drive_text.get_width()/2, 575))
 
 
-    def draw_path_planning_window(self, ACTIVE_WINDOW, grid, start_btn, start_btn_color, reset_btn, reset_btn_color, time_taken, navigate_button, navigate_btn_color, robot, dt, 
-                    draw_frame, robot_angle_, counter, waypoints_len, logger, spline_path):
+    def draw_path_planning_window(self, ACTIVE_WINDOW, grid, start_btn, start_btn_color, reset_btn, reset_btn_color, save_map_btn, save_map_btn_color,
+                                  time_taken, navigate_button, navigate_btn_color, robot, dt, draw_frame, robot_angle_, counter, waypoints_len, logger, spline_path):
         # fill background with white color
         ACTIVE_WINDOW.fill(WHITE)
 
@@ -349,6 +356,8 @@ class AutoNavSim2D:
         self.draw_start_button(ACTIVE_WINDOW, button=start_btn, color=start_btn_color)
         self.draw_navigate_button(ACTIVE_WINDOW, button=navigate_button, color=navigate_btn_color)
         self.draw_reset_button(ACTIVE_WINDOW, button=reset_btn, color=reset_btn_color)
+        if self.file_save_path is not None:
+            self.draw_save_map_button(ACTIVE_WINDOW, button=save_map_btn, color=save_map_btn_color)
 
         # draw robot on screen
         if robot is not None:
@@ -452,13 +461,16 @@ class AutoNavSim2D:
         
         # path planning buttons
         start_btn = pygame.rect.Rect(self.WIN_WIDTH + 85, 390, 130, 50)
-        start_btn_color = GREEN
+        start_btn_color = ORANGE
 
         navigate_button = pygame.rect.Rect(self.WIN_WIDTH + 85, 450, 130, 50)
         navigate_btn_color = RED
 
         reset_btn = pygame.rect.Rect(self.WIN_WIDTH + 85, 510, 130, 50)
         reset_btn_color = BLUE
+
+        save_map_btn = pygame.rect.Rect(self.WIN_WIDTH + 85, 570, 130, 50)
+        save_map_btn_color = GREEN
 
         # start and end locs
         start_coord = None
@@ -497,13 +509,6 @@ class AutoNavSim2D:
             # listen for events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    # save map to csv file
-                    if self.file_save_path is not None:
-                        time_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-                        file_name = self.file_save_path + time_string + ".csv"
-                        print(file_name)
-                        save_map_to_csv(grid, file_name)
-                    
                     # end program
                     run = False
                 
@@ -593,6 +598,14 @@ class AutoNavSim2D:
                         self.clear_map_path_all(path, grid, start_coord, end_coord, BLUE)
                         self.run()
 
+                    # save map click
+                    elif self.path_planning_window_select == True and save_map_btn.x <= pos[0] <=save_map_btn.x + save_map_btn.width and save_map_btn.y <= pos[1] <= save_map_btn.y + save_map_btn.height:
+                        # save map to csv file
+                        if self.file_save_path is not None:
+                            time_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+                            file_name = self.file_save_path + time_string + ".csv"
+                            save_map_to_csv(grid, file_name)
+                            logger.log("Map saved")
 
                     # grid click
                     else:
@@ -825,7 +838,7 @@ class AutoNavSim2D:
             # draw path planning and nav window
             if self.path_planning_window_select:
                 robot_angle_ = [robot_angle]
-                self.draw_path_planning_window(self.ACTIVE_WINDOW, grid_cpy, start_btn, start_btn_color, reset_btn, reset_btn_color, time_taken, navigate_button, navigate_btn_color, robot, dt, 
+                self.draw_path_planning_window(self.ACTIVE_WINDOW, grid_cpy, start_btn, start_btn_color, reset_btn, reset_btn_color, save_map_btn, save_map_btn_color, time_taken, navigate_button, navigate_btn_color, robot, dt, 
                             draw_frame, robot_angle_, counter=counter, waypoints_len=len(waypoints), logger=logger, spline_path=spline_path)
 
             # draw path if generated
