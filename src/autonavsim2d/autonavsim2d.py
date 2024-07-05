@@ -2,11 +2,9 @@ import pygame
 from autonavsim2d.utils.utils import generate_path, generate_path_custom, generate_waypoints, compare_waypoints, parse_arrow_angle, RED, BLACK, WHITE, GREEN, GREY, ORANGE, BLUE, RED_LIGHT, GREY_LIGHT
 from autonavsim2d.utils.robot_model import Robot
 from autonavsim2d.utils.logger import Logger
+from autonavsim2d.utils.map_save_and_load import load_map
 import math
 import pkg_resources
-import csv
-
-
 
 class AutoNavSim2D:
 
@@ -66,7 +64,7 @@ class AutoNavSim2D:
     LOGO_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/logo.png')), (150, 150))
     BACKGROUND_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/background2.jpg')), (WIN_WIDTH_FULL, WIN_HEIGHT_FULL))
 
-    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None, map_csv_path=None):
+    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None, map_json_path=None):
         # set window
         if window == 'default':
             self.ACTIVE_WINDOW = self.WIN
@@ -102,7 +100,7 @@ class AutoNavSim2D:
             self.dev_custom_motion_planner = custom_motion_planner
 
         # set the path to the predefined map csv file - note that the full file path must be given
-        self.map_csv_path = map_csv_path
+        self.map_json_path = map_json_path
 
     def generate_grid(self):
         # empty grid
@@ -124,34 +122,6 @@ class AutoNavSim2D:
             x += 1
 
         return grid
-    
-    def load_map(self, grid):
-        '''
-        Loads a predefined map from a csv file with the following format:
-        top_left_x,top_left_y,bottom_right_x,bottom_right_y
-
-        Where the first point is defined by the first 2 datapoints and the second point by the last 2.
-        Multiple rectangles can be added simply by adding new lines.
-        '''
-        if self.map_csv_path is None:
-            return grid
-        
-        grid_size = (len(grid), len(grid[0]))
-        with open(self.map_csv_path, newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                top_left = (int(row['top_left_x']), int(row['top_left_y']))
-                bottom_right = (int(row['bottom_right_x']), int(row['bottom_right_y']))
-                
-                for x in range(top_left[0], bottom_right[0] + 1):
-                    for y in range(top_left[1], bottom_right[1] + 1):
-                        if x < grid_size[1] and y < grid_size[0]:
-                            grid[x][y][1] = BLACK
-                        else:
-                            print('Obstacle definition outside of grid attempted.')
-        
-        return grid
-
 
     def draw_robot_frame(self, ACTIVE_WINDOW, center, rotation):
         n=50
@@ -274,7 +244,7 @@ class AutoNavSim2D:
 
     def draw_text(self, ACTIVE_WINDOW, time_taken):
         # algorithm name text
-        name_text = self.ALGORITHM_NAME_FONT.render("Algorithm: Dijkstra", 1, BLACK)
+        name_text = self.ALGORITHM_NAME_FONT.render("Algorithm: Custom", 1, BLACK)
         ACTIVE_WINDOW.blit(name_text, (self.WIN_WIDTH+55, 30))
 
         # time taken text
@@ -465,7 +435,7 @@ class AutoNavSim2D:
         grid = self.generate_grid()
 
         # Initialize mapped environment with new obstacles
-        grid = self.load_map(grid)
+        grid = load_map(grid, self.map_json_path)
 
         grid_cpy = grid
 
