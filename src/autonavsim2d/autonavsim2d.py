@@ -4,6 +4,7 @@ from autonavsim2d.utils.robot_model import Robot
 from autonavsim2d.utils.logger import Logger
 import math
 import pkg_resources
+import csv
 
 
 
@@ -65,7 +66,7 @@ class AutoNavSim2D:
     LOGO_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/logo.png')), (150, 150))
     BACKGROUND_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/background2.jpg')), (WIN_WIDTH_FULL, WIN_HEIGHT_FULL))
 
-    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None):
+    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None, map_csv_path=None):
         # set window
         if window == 'default':
             self.ACTIVE_WINDOW = self.WIN
@@ -100,6 +101,8 @@ class AutoNavSim2D:
             # set dev custom motion planner
             self.dev_custom_motion_planner = custom_motion_planner
 
+        # set the path to the predefined map csv file - note that the full file path must be given
+        self.map_csv_path = map_csv_path
 
     def generate_grid(self):
         # empty grid
@@ -120,6 +123,35 @@ class AutoNavSim2D:
             grid.append(rows)
             x += 1
 
+        return grid
+    
+    def load_map(self, grid):
+        '''
+        loads a predefined map from a csv file with the following format:
+        top_left_x,top_left_y,bottom_right_x,bottom_right_y
+
+        where the first point is defined by the first 2 datapoints and the second point by the last 2
+        multiple rectangles can be added simply by drawing new lines
+
+        '''
+        # loads map from csv file
+        if self.map_csv_path is None:
+            return grid
+        
+        grid_size = (len(grid), len(grid[0]))
+        with open(self.map_csv_path, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                top_left = (int(row['top_left_x']), int(row['top_left_y']))
+                bottom_right = (int(row['bottom_right_x']), int(row['bottom_right_y']))
+                
+                for x in range(top_left[0], bottom_right[0] + 1):
+                    for y in range(top_left[1], bottom_right[1] + 1):
+                        if x < grid_size[1] and y < grid_size[0]:
+                            grid[x][y][1] = BLACK
+                        else:
+                            print('Obstacle definition outside of grid attempted.')
+        
         return grid
 
 
@@ -433,6 +465,10 @@ class AutoNavSim2D:
 
         # generate grid
         grid = self.generate_grid()
+
+        # Initialize mapped environment with new obstacles
+        grid = self.load_map(grid)
+
         grid_cpy = grid
 
         # main window buttons
