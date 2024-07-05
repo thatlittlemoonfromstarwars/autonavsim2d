@@ -127,14 +127,12 @@ class AutoNavSim2D:
     
     def load_map(self, grid):
         '''
-        loads a predefined map from a csv file with the following format:
+        Loads a predefined map from a csv file with the following format:
         top_left_x,top_left_y,bottom_right_x,bottom_right_y
 
-        where the first point is defined by the first 2 datapoints and the second point by the last 2
-        multiple rectangles can be added simply by drawing new lines
-
+        Where the first point is defined by the first 2 datapoints and the second point by the last 2.
+        Multiple rectangles can be added simply by adding new lines.
         '''
-        # loads map from csv file
         if self.map_csv_path is None:
             return grid
         
