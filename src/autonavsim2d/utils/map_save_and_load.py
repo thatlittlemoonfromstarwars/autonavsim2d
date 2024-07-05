@@ -1,7 +1,10 @@
 from autonavsim2d.utils.utils import BLACK
 import json
+import csv
+import numpy as np
+import os
 
-def load_map(grid, file_path):
+def load_map_json(grid, file_path):
     '''
     Loads a predefined map from a json file. See below for an example file:
     {
@@ -76,3 +79,42 @@ def load_map(grid, file_path):
             draw_triangle(obstacle['vertices'])
     
     return grid
+
+def load_map_csv(grid, file_path):
+    if file_path is None:
+        return grid
+    
+    # read csv file to matrix
+    with open(file_path, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        matrix = np.array([list(map(int, row)) for row in reader])
+    
+    # convert to grid
+    for x in range(len(matrix[0])):
+        for y in range(len(matrix)):
+            if matrix[y][x] == 0:
+                grid[y][x][1] = BLACK
+    
+    return grid
+
+def save_map_to_csv(grid, file_path):
+    # saves a drawn map to a file in the same format given above
+    
+    # convert grid to matrix
+    matrix = np.ones((len(grid), len(grid[0])))
+    matrix = matrix.astype(int)
+    for x in range(len(grid[0])):
+        for y in range(len(grid)):
+            if grid[y][x][1] == BLACK:
+                matrix[y][x] = 0
+    
+    try:
+        # save to csv
+        with open(file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            for row in matrix:
+                writer.writerow(row)
+        return True
+    
+    except:
+        return False

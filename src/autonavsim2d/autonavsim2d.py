@@ -2,9 +2,10 @@ import pygame
 from autonavsim2d.utils.utils import generate_path, generate_path_custom, generate_waypoints, compare_waypoints, parse_arrow_angle, RED, BLACK, WHITE, GREEN, GREY, ORANGE, BLUE, RED_LIGHT, GREY_LIGHT
 from autonavsim2d.utils.robot_model import Robot
 from autonavsim2d.utils.logger import Logger
-from autonavsim2d.utils.map_save_and_load import load_map
+from autonavsim2d.utils.map_save_and_load import load_map_json, load_map_csv, save_map_to_csv
 import math
 import pkg_resources
+import datetime
 
 class AutoNavSim2D:
 
@@ -64,7 +65,7 @@ class AutoNavSim2D:
     LOGO_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/logo.png')), (150, 150))
     BACKGROUND_IMAGE = pygame.transform.scale(pygame.image.load(pkg_resources.resource_filename('autonavsim2d', 'utils/assets/background2.jpg')), (WIN_WIDTH_FULL, WIN_HEIGHT_FULL))
 
-    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None, map_json_path=None):
+    def __init__(self, custom_planner=None, custom_motion_planner=None, window=None, map_file_path=None, file_save_path=None):
         # set window
         if window == 'default':
             self.ACTIVE_WINDOW = self.WIN
@@ -99,8 +100,9 @@ class AutoNavSim2D:
             # set dev custom motion planner
             self.dev_custom_motion_planner = custom_motion_planner
 
-        # set the path to the predefined map csv file - note that the full file path must be given
-        self.map_json_path = map_json_path
+        # set the path to the predefined map json file - note that the full file path must be given
+        self.map_file_path = map_file_path
+        self.file_save_path = file_save_path
 
     def generate_grid(self):
         # empty grid
@@ -434,8 +436,12 @@ class AutoNavSim2D:
         # generate grid
         grid = self.generate_grid()
 
-        # Initialize mapped environment with new obstacles
-        grid = load_map(grid, self.map_json_path)
+        # Initialize mapped environment with prexisting map
+        if self.map_file_path is not None:
+            if self.map_file_path.endswith(".json"):
+                grid = load_map_json(grid, self.map_file_path)
+            elif self.map_file_path.endswith(".csv"):
+                grid = load_map_csv(grid, self.map_file_path)
 
         grid_cpy = grid
 
@@ -491,6 +497,14 @@ class AutoNavSim2D:
             # listen for events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    # save map to csv file
+                    if self.file_save_path is not None:
+                        time_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+                        file_name = self.file_save_path + time_string + ".csv"
+                        print(file_name)
+                        save_map_to_csv(grid, file_name)
+                    
+                    # end program
                     run = False
                 
                 if pygame.mouse.get_pressed()[0]:   # left click
@@ -585,6 +599,7 @@ class AutoNavSim2D:
                         # get clicked cell
                         clicked_row = pos[1] // self.cell_spacing
                         clicked_col = pos[0] // self.cell_spacing
+                        # print(str(clicked_col) + ", " + str(clicked_row)) # uncomment to print clicked cell to terminal - for testing
                         if  self.path_planning_window_select == True and (int(pos[0]) < self.WIN_WIDTH) and (int(pos[1]) < self.WIN_HEIGHT):
                             cell = grid[clicked_row][clicked_col]
 
